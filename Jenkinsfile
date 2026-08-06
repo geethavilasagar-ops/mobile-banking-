@@ -23,6 +23,15 @@ pipeline {
                 }
             }
         }
+        stage('Deploy Backend') {
+    steps {
+        bat '''
+            docker rm -f mobile-banking-api 2>nul || echo No existing container
+            docker run -d --name mobile-banking-api -p 5000:5000 mobile-banking-backend
+        '''
+    }
+}
+        
 
         stage('Build Docker Image') {
     steps {
