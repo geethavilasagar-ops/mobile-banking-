@@ -67,15 +67,22 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         </Animated.Text>
       </View>
 
-      {/* Bottom button */}
+      {/* Bottom buttons */}
       <Animated.View style={[styles.buttonWrapper, buttonStyle]}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('PersonalInfo')}
+          onPress={() => navigation.navigate('Login')}
           activeOpacity={0.9}
         >
-          <Text style={styles.buttonText}>Get Started  →</Text>
+          <Text style={styles.buttonText}>Sign In</Text>
         </TouchableOpacity>
+        
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24, alignItems: 'center' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>New User? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('PersonalInfo')}>
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 }}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );
