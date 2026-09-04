@@ -14,8 +14,12 @@ export const transferValidation = [
   body('amount').isFloat({ min: 1 }).withMessage('Amount must be at least 1'),
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('pin').trim().notEmpty().withMessage('Transaction PIN is required'),
+  body('paymentMethod').isIn(['upi', 'mobile', 'bank']).withMessage('Invalid payment method'),
   body('receiverUpiId').optional().trim(),
-  body('receiverAccountNumber').optional().trim(),
+  body('receiverMobile').optional().trim(),
+  body('receiverBankAccount').optional().trim(),
+  body('ifsc').optional().trim(),
+  body('receiverName').optional().trim()
 ];
 
 const generateReferenceId = () => {
@@ -24,7 +28,7 @@ const generateReferenceId = () => {
 
 export const transfer = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { amount, title, pin, receiverUpiId, receiverAccountNumber, receiverName } = req.body;
+    const { amount, title, pin, paymentMethod, receiverUpiId, receiverMobile, receiverBankAccount, ifsc, receiverName } = req.body;
     const userId = req.userId!;
 
     // Validate PIN
@@ -51,16 +55,28 @@ export const transfer = async (req: AuthRequest, res: Response): Promise<void> =
       return;
     }
 
-    // In a real banking app, we would resolve the receiver's account here using UPI ID or Account Number.
-    // For this project, we will simulate the receiver.
     let receiverAccount = null;
-    if (receiverAccountNumber) {
-       receiverAccount = await BankAccount.findOne({ accountNumber: receiverAccountNumber });
+    let finalReceiverName = receiverName || 'Unknown';
+
+    if (paymentMethod === 'mobile' && receiverMobile) {
+      // Lookup receiver by mobile number linked to user account
+      // In a real app, this would query User then BankAccount
+      // We simulate by finding an account where the 'accountNumber' matches the mobile, or we just proceed for simulation
+      receiverAccount = await BankAccount.findOne({ accountNumber: receiverMobile });
+    } else if (paymentMethod === 'bank' && receiverBankAccount) {
+      // Lookup receiver by bank account
+      receiverAccount = await BankAccount.findOne({ accountNumber: receiverBankAccount });
+    } else if (paymentMethod === 'upi' && receiverUpiId) {
+       // Lookup receiver by upi
+       receiverAccount = await BankAccount.findOne({ accountNumber: receiverUpiId });
     }
 
-    if (receiverAccount && receiverAccount.userId.toString() === userId) {
-      errorResponse(res, 'Cannot transfer to your own account.', 400);
-      return;
+    if (receiverAccount) {
+      if (receiverAccount.userId.toString() === userId) {
+        errorResponse(res, 'Cannot transfer to your own account.', 400);
+        return;
+      }
+      finalReceiverName = receiverAccount.cardholderName || finalReceiverName;
     }
 
     // Deduct from sender
@@ -84,8 +100,11 @@ export const transfer = async (req: AuthRequest, res: Response): Promise<void> =
       referenceId: refId,
       senderAccountId: senderAccount._id,
       receiverAccountId: receiverAccount ? receiverAccount._id : undefined,
-      receiverName: receiverName || (receiverAccount ? receiverAccount.cardholderName : 'Unknown'),
-      receiverUpiId: receiverUpiId,
+      receiverName: finalReceiverName,
+      receiverUpiId,
+      receiverMobile,
+      receiverBankAccount,
+      paymentMethod,
     });
 
     // Notify sender

@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import TransactionPIN from '../models/TransactionPIN';
 import RegistrationStatus from '../models/RegistrationStatus';
 import { AuthRequest } from '../middleware/auth';
-import { hashValue } from '../utils/hashUtils';
+import { hashValue, compareValue } from '../utils/hashUtils';
 import { successResponse, errorResponse } from '../utils/responseUtils';
 
 export const setPINValidation = [
@@ -62,3 +62,32 @@ export const setTransactionPIN = async (req: AuthRequest, res: Response): Promis
     errorResponse(res, 'Failed to set PIN.', 500);
   }
 };
+
+export const verifyTransactionPIN = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { pin } = req.body;
+    const userId = req.userId!;
+
+    if (!pin) {
+      errorResponse(res, 'PIN is required.', 400);
+      return;
+    }
+
+    const transactionPin = await TransactionPIN.findOne({ userId });
+    if (!transactionPin) {
+      errorResponse(res, 'Transaction PIN not set.', 404);
+      return;
+    }
+
+    const isPinValid = await compareValue(pin, transactionPin.hashedPIN);
+    if (!isPinValid) {
+      errorResponse(res, 'Invalid Transaction PIN.', 401);
+      return;
+    }
+
+    successResponse(res, { verified: true }, 'PIN verified successfully.');
+  } catch (err) {
+    errorResponse(res, 'Failed to verify PIN.', 500);
+  }
+};
+

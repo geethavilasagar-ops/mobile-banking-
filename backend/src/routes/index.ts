@@ -29,4 +29,17 @@ router.get('/health', (req, res) => {
   res.json({ success: true, message: 'Dev Pay API is running 🚀', timestamp: new Date().toISOString() });
 });
 
+import fs from 'fs';
+import path from 'path';
+
+router.post('/log-error', (req, res) => {
+  const logPath = path.join(process.cwd(), 'runtime_error.log');
+  fs.writeFileSync(logPath, JSON.stringify(req.body, null, 2));
+  console.error('\n====================================');
+  console.error('RUNTIME ERROR CAPTURED FROM MOBILE:');
+  console.error(req.body);
+  console.error('====================================\n');
+  res.json({ success: true });
+});
+
 export default router;

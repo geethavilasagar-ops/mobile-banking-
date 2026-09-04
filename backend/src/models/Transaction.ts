@@ -14,6 +14,9 @@ export interface ITransaction extends Document {
   receiverAccountId?: mongoose.Types.ObjectId;
   receiverName?: string;
   receiverUpiId?: string;
+  receiverMobile?: string;
+  receiverBankAccount?: string;
+  paymentMethod?: 'upi' | 'mobile' | 'bank';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +33,9 @@ const TransactionSchema: Schema<ITransaction> = new Schema(
     receiverAccountId: { type: Schema.Types.ObjectId, ref: 'BankAccount' },
     receiverName: { type: String },
     receiverUpiId: { type: String },
+    receiverMobile: { type: String },
+    receiverBankAccount: { type: String },
+    paymentMethod: { type: String, enum: ['upi', 'mobile', 'bank'] },
   },
   { timestamps: true }
 );
